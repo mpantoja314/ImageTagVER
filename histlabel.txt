@@ -1,0 +1,33 @@
+one label
+two label 
+three label
+Damageaa Label
+Structure Laaaabel
+Shear/diagonal fAAAA
+coupling CCCCC
+Failure of bbbb hoops/ties
+joint-column conbbnection
+Failure of bbbb hoops/ties
+joint-column conbbnection
+Concentsssrated flexural cracking
+foundatisssson beam
+Distributed plastiaaac hinging
+foundation beaaaam
+Shear cracking bbb
+short/captive column cc
+Global buckling/instability
+foundation beaaaam
+dm2 bb
+structure aa d
+dm 3 a
+structure bc
+Collapse
+Bridge
+overturning
+core wall system
+overturning
+core wall system
+overturning
+core wall system
+slash fracture
+floor
