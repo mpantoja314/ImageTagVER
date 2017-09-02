@@ -17,7 +17,7 @@ python main.py
 
 you should see this:
 
-
+![alt text](screenshots/2.jpg "Description goes here")
 
 
 
