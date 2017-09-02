@@ -10,8 +10,8 @@ pip install pillow
 pip install numpy
 pip install matplotlib
 
-Step 4
-Download them and put them in a folder.
+Step 2
+Download files and place them in a folder.
 In a terminal type:
 python main.py
 
