@@ -43,7 +43,6 @@ On Top Left Conner select File→select output folder (select the folder where y
 
 Select one of the Type of Damage radio buttons and a Type of Structure radio button and click/drag on the image selecting the area you are interested on
 The labels you select will be shown on the History Console  ListBox
-![alt text](screenshots/3.jpg "New Screen")
 
 You can create your own labels by entering the names on the top left create new label Input box, the previously created labels will be displayed in the listbox under. You must click on the Done creating new label so it gets saved for future use
 
@@ -52,7 +51,8 @@ If you made a mistake and want to erase some of the lebels click on the button S
 Click on Save and exit when done
 
 2. When you click on Tag Image add your own labels you will be ask for the location of the Damages (DM.txt) and then the location of the structures (ST.txt) . After that the functionality is exactly the same  as in 1.
-![alt text](screenshots/4.jpg "New Screen")
+![alt text](screenshots/3.jpg "New Screen")
+
 3. Review ImageTag
 
 If you want to review somebody else’s tag and erase/add some of the labels
@@ -61,7 +61,7 @@ If you want to review somebody else’s tag and erase/add some of the labels
 3. Select Tagged text file (output.txt). This is the file that contains all the tags should be named Output.txt and located on the out folder you selected
 
 After this functionality is as 1
-![alt text](screenshots/5.jpg "New Screen")
+![alt text](screenshots/4.jpg "New Screen")
 
 4. Create Statistics
 
