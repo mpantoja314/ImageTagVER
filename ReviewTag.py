@@ -1,19 +1,5 @@
-# Copyright 2017 The ImageTAgVER Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-import gtk
-gtk.set_interactive(False)
+#import gtk
+#gtk.set_interactive(False)
 import Tkinter as tk
 from Tkinter import *
 from PIL import Image, ImageTk # for windows is this option , ImageGrab
@@ -27,10 +13,16 @@ class Gui():
     def __init__(self, root):
         self.root=root
  
-        self.canvas=tk.Canvas(root,  width=450, height=650,borderwidth=2, relief="groove",cursor="cross")
-        self.canvas.grid(row=0,column=0, pady=10, padx=10)
+        frameCanvas=Frame(self.root)
+	frameCanvas.grid(row=0,column=0,pady=20,sticky="n")
+        self.canvas=tk.Canvas(frameCanvas,  width=450, height=650,borderwidth=2, relief="groove",cursor="cross")
+        self.canvas.grid(row=0,column=0, pady=0, padx=10)
+	buttonNext = tk.Button(frameCanvas, text="Next", command=self.ImageNext).grid(row=1,column=0,pady=5,sticky="n")
 	
 	self.x = self.y = 0
+
+	#Image Loaded or not
+	self.ImageLoaded=0
 	
 	#variables to be able to erase elements on the canvas
 	self.rec_id=list()
@@ -50,44 +42,49 @@ class Gui():
         self.start_x = None
         self.start_y = None
 
+	#don't ask for Output.txt again
+	self.Out=0
+
 	# add a File Save menu
 	menu=Menu(root)
 	root.config(menu=menu)
 	filemenu = Menu(menu)
 	menu.add_cascade(label="File", menu=filemenu)
-	filemenu.add_command(label="Open Tagged Image you want to review...", command=self.open_file)
+	filemenu.add_command(label="Open the Original Image of the File you want to Review...", command=self.open_file)
 	#filemenu.add_command(label="Open All files in folder...", command=self.open_folder)
 	filemenu.add_command(label="Select Output folder...", command=self.out_folder)
+	filemenu.add_command(label="Enter Loc of File with labels", command=self.open_fileText)
 	filemenu.add_separator()
 	filemenu.add_command(label="Exit", command=root.quit)
 
 	helpmenu = Menu(menu)
 	menu.add_cascade(label="Help", menu=helpmenu)
 	helpmenu.add_command(label="Instructions...", command=self.help)
-	helpmenu.add_command(label="about V.E.R ...", command=self.about)
-	self.path_out="a"  #tagged image path
-	self.path="a"	   #original image path
-	self.pathText="a"  #labels path Output.txt"
-	self.pathAnnotations="/annotations" #path where xml for each file is saved by default (should be able to change TODO	
+	helpmenu.add_command(label="About C.I.T.T ...", command=self.about)
+	cwd = os.getcwd()
+	self.path_out=os.path.join(cwd, 'Out/')
+	self.path=os.path.join(cwd,'images/')
+
+
+	#list for names of images ina a folder
+	self.ImageList=[]
+	self.ImageListIndex=0
+	
+	self.pathText="/Out"  #labels path Output.txt"
+	self.pathAnnotations="/annotations" #path where xml for each file is saved by default	
 	
 	#delete labels two buttons
 	frameM=Frame(root)
 	frameM.grid(row=0,column=1,pady=20, padx=10,sticky="n")
 	
-	buttonOutFile=tk.Button(frameM, width=25,text="Enter Loc of File with labels", command=self.open_fileText).grid(row=2,column=1,sticky="n")
-	
+	#buttonOutFile=tk.Button(frameM, width=25,text="Enter Loc of File with labels", command=self.open_fileText).grid(row=2,column=1,sticky="n")
+	self.reviewLabel=tk.Label(frameM,width=25,borderwidth=2, relief="groove", text="REVIEW IMAGE")
+	self.reviewLabel.grid(row=2,column=1,sticky="n")
 	
 	l4=tk.Label(frameM,borderwidth=2, relief="groove",text="Delete Options").grid(row=11,column=1,pady=10,sticky="n")
 	buttonDeleteStart=tk.Button(frameM, width=25,text="Start Deleting", command=self.deleteStart).grid(row=12,column=1,sticky="n")
 	buttonDeleteStop=tk.Button(frameM, width=25,text="Stop Deleting", command=self.deleteEnd).grid(row=13,column=1,sticky="n")
 	
-	#add the save Image/ Exit
-	l4=tk.Label(frameM,borderwidth=2, relief="groove",text="Save/exit Options").grid(row=14,column=1,pady=15,sticky="n")
-	
-	buttonE = tk.Button(frameM, text="Save and Exit", command=self.save_exit).grid(row=15,column=1,pady=10,sticky="n")
-	buttonC = tk.Button(frameM, text="Cancel (NO SAVE)", command=self.exit).grid(row=16,column=1,pady=10,sticky="n")
-
-
 	#console
 	self.consoleLabel=tk.Label(frameM,width=25,borderwidth=2, relief="groove", text="Current Labels")
 	self.consoleLabel.grid(row=7,column=1,pady=5,sticky="n")
@@ -174,7 +171,43 @@ class Gui():
         	self.panelC = tk.Radiobutton(frameS, text=text, variable=self.StructureStr, value=text,command=self.StructureSel)
 		self.panelC.grid(row=r,column=3,pady=4,sticky="w")
 		r=r+1
+	
 
+	#Add the delete New Label and Delete Label to screen
+	l2 = tk.Label(frameM,borderwidth=2, relief="groove", text="Create a New Label").grid(row=14,column=1,sticky="n")
+	self.newST=tk.StringVar(frameM, value=self.StructureStr.get())
+	self.newDM=tk.StringVar(frameM, value=self.DamageStr.get())
+	self.textST=tk.Entry(frameM, width=25, textvariable=self.newST).grid(row=15,column=1,sticky="n")
+	self.textDM=tk.Entry(frameM, width=25, textvariable=self.newDM).grid(row=16,column=1,sticky="n")
+
+	#label History
+	self.labelHist=tk.Listbox(frameM, width=50, height=5)
+	self.labelHist.grid(row=17,column=1,pady=5,sticky="ns")
+	self.scrollbar=Scrollbar(frameM,orient=VERTICAL)
+	self.scrollbar.grid(row=17, column=2,sticky=N+S)
+	self.labelHist.config(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.config(command=self.labelHist.yview)
+
+	self.labelHist.insert(10,"New Label History list:")
+	#read This from a file
+	fileHistLabel=open("histlabel.txt","r")
+	for item in fileHistLabel:
+		item=item[:-1] #erases the stupid /0 end of string char
+		self.labelHist.insert(20,item)
+	fileHistLabel.close()
+	#button that creates label once you are done entering values Necesary???
+	doneButton=tk.Button(frameM,text="Done Creating Label", command= self.create_new_label)
+	doneButton.grid(row=18,column=1,pady=10,sticky="n")
+
+	#add the save Image/ Exit
+	l4=tk.Label(frameM,borderwidth=2, relief="groove",text="Save/exit Options").grid(row=19,column=1,pady=15,sticky="n")
+	
+	buttonE = tk.Button(frameM, text="Save and Exit", command=self.save_exit).grid(row=20,column=1,sticky="n")
+	buttonC = tk.Button(frameM, text="Cancel (DO NO SAVE)", command=self.exit).grid(row=21,column=1,sticky="n")
+
+
+
+	
     #selects the Damage Label
     def DamageSel(self):
 	pass
@@ -184,51 +217,81 @@ class Gui():
 	pass
 
     def _draw_image(self,path):
-	 #get name of file no path
-	 #search for the last /
-	 
-	 self.consoleHist.insert(20,os.path.basename(path)+"\n") # insert filename on history console
+	 #write to console hist name of file
+	 self.consoleHist.insert(20,os.path.basename(path)+"\n")
          self.im = Image.open(path)
          self.tk_im = ImageTk.PhotoImage(self.im)
          self.canvas.create_image(0,0,anchor="nw",image=self.tk_im)
          self.ImageSize=self.im.size  
 	 #make size of canvas same as image
 	 self.canvas.config(width=self.ImageSize[0], height=self.ImageSize[1])
+	 self.ImageLoaded=1
+
+    def ImageNext(self):
+	#save stuff from Image first, than load the new Image
+	self.save()
+	
+	if self.ImageListIndex < len(self.ImageList):
+		#erase stuff on the console
+		self.consoleHist.delete(0,END)
+	
+		pathNext= self.ImageList[self.ImageListIndex]
+		dirpath=os.path.dirname(self.path)
+		self._draw_image(dirpath+'/'+pathNext)
+		#make the new picture the path
+		self.path=dirpath+'/'+pathNext
+		#draw the labels
+		self.pathText=os.getcwd()+"/Out/Output.txt"
+		self.open_fileText()
+		self.ImageListIndex=self.ImageListIndex+1
+	else:
+		root.quit()
 
     def on_button_press(self, event):
         # save mouse drag start position
         self.start_x = event.x
         self.start_y = event.y
 
-       	# create rectangle, initial dot if not erasing it
-	if self.erase == 0:
-        	self.rect = self.canvas.create_rectangle(self.x, self.y, 1, 1, outline="red")
-		self.testDM=self.canvas.create_text(self.start_x,self.start_y-10,fill="red", font="Times 10", text=self.DamageStr.get())
-		self.testST=self.canvas.create_text(self.start_x,self.start_y,fill="red", font="Times 10", text=self.StructureStr.get())
-		#add recId to a list so then it can be erased
-		self.rec_id.append(self.rect)
-		self.text_id_DM.append(self.testDM)
-		self.text_id_ST.append(self.testST)
-	else:
-		#if delete rec pressed than check if there is a rectangle to be erased
-		self.collision(self.start_x,self.start_y)
+       	# create rectangle, initial dot if not erasing it but only if there is an image already loaded
+	if self.ImageLoaded==1:
+		if self.erase == 0:
+        		self.rect = self.canvas.create_rectangle(self.x, self.y, 1, 1, outline="red")
+			self.testDM=self.canvas.create_text(self.start_x,self.start_y-10,fill="red", font="Times 10", text=self.DamageStr.get())
+			self.testST=self.canvas.create_text(self.start_x,self.start_y,fill="red", font="Times 10", text=self.StructureStr.get())
+			#add recId to a list so then it can be erased
+			self.rec_id.append(self.rect)
+			self.text_id_DM.append(self.testDM)
+			self.text_id_ST.append(self.testST)
+		else:
+			#if delete rec pressed than check if there is a rectangle to be erased
+			self.collision(self.start_x,self.start_y)
 
     def on_move_press(self, event):
-        curX, curY = (event.x, event.y)
-
-        # expand rectangle as you drag the mouse if not erasing
-        if self.erase == 0:
-		self.canvas.coords(self.rect, self.start_x, self.start_y, curX, curY)
+	if self.ImageLoaded==1:
+	        curX, curY = (event.x, event.y)
+	        # expand rectangle as you drag the mouse if not erasing
+        	if self.erase == 0:
+			self.canvas.coords(self.rect, self.start_x, self.start_y, curX, curY)
 
     def on_button_release(self, event):
 	#show rec coord and labels on console self.consoleHist.insert(20,self.DamageStr.get())
-	#save rect to out 
-	if self.erase==0:
-		text="rect:" + str(self.start_x)+" "+str(self.start_y)+" "+str(event.x)+" "+str(event.y)+" "+ self.DamageStr.get()+ " "+ self.StructureStr.get()+"\n"
-		#with open("Output.txt", "a+") as text_file:
-    		#	text_file.write(text)
-        	#write to console history
-		self.consoleHist.insert(20,text)
+	#save rect to out
+	if self.ImageLoaded==1:
+ 		if self.erase==0:
+			#erase label if less than 3 pixel width or height
+			if abs(self.start_x - event.x) <=3 or abs(self.start_y - event.y) <=3 :
+				last=len(self.rec_id) -1
+				#delete rectangle and labels
+				self.canvas.delete(self.rec_id[last])
+				del self.rec_id[last]
+				self.canvas.delete(self.text_id_DM[last])
+				del self.text_id_DM[last]
+				self.canvas.delete(self.text_id_ST[last])
+				del self.text_id_ST[last]
+			else:	 
+				text="rect:" + str(self.start_x)+" "+str(self.start_y)+" "+str(event.x)+" "+str(event.y)+" "+ self.DamageStr.get()+ " "+ self.StructureStr.get()+"\n"
+				#write to console history
+				self.consoleHist.insert(20,text)
 	
     def collision(self,x,y):
         for rec in range(len(self.rec_id)):
@@ -264,6 +327,19 @@ class Gui():
     
     def deleteEnd(self):
 	self.erase=0
+    
+    #Create the new Structure+Damage Label
+    #allows to select name from the radio button just in case one one of the entries needs to change
+    def create_new_label(self):
+	#set label to the new one created
+	self.DamageStr.set(self.newDM.get())
+	self.StructureStr.set(self.newST.get())
+	with open("histlabel.txt", "a+") as text_file:
+    		text_file.write(self.newDM.get()+"\n")
+           	text_file.write(self.newST.get()+"\n")
+
+	#add to history
+	self.labelHist.insert(20, self.StructureStr.get()+" "+self.DamageStr.get())
 
     #function to save the annotations for the PASCAL VOC FORM so the tags can be used in Tensorflow 
     def create_xml(self):
@@ -340,39 +416,43 @@ class Gui():
 
 
 		text_file.write("</annotation>\n")
-
-     #save function
+   
+	
+    #save image and exit progrma
     def save(self):
 	# get a list of listbox lines
     	temp_list = list(self.consoleHist.get(0, tk.END))
-    
-	#save label file
-	if self.pathText=="a":
-		p="Output.txt" #path text file Output.txt
-	else:
-		p=self.pathText
+    	# add a trailing newline char to each line, no need
+    	#temp_list = [chem + '\n' for chem in temp_list]
+    	# save to file use path_out
+	index=self.path.index('.')
+	outfilename=self.path[0:index]+"-out.jpeg"
+	cwd = os.getcwd()
 
-	with open(p, "a+") as text_file:
-    		text_file.writelines(temp_list)
-
-	# save Image Tagged use path_out
 	if self.path_out=="a":
-		index=self.path.index('.')
-		outfilename=self.path[0:index]+"-out.jpeg"
-		p1=outfilename #path for tagged Image
+		p="Output.txt"
+		p1=outfilename
 	else:
+		p=os.path.join(cwd,self.path_out,"Output.txt")
+		#print p
 		filename=os.path.basename(self.path)
 		index2=filename.index('.')
 		filename=filename[0:index2]+"-out.jpeg"
-		p1=self.path_out+'/'+filename
-	#for WINDOWS ImageGrab(0,0,self.width,self.height).save("out.jpeg")
-	widget=self.canvas
+		p1=os.path.join(cwd,self.path_out,filename)
+		#print p1
+	with open(p, "a+") as text_file:
+    		text_file.writelines(temp_list)
+   	#for WINDOWS ImageGrab(0,0,self.width,self.height).save("out.jpeg")
+	widget=self.canvas 
 	x=root.winfo_rootx()+widget.winfo_x()
     	y=root.winfo_rooty()+widget.winfo_y()
     	x1=x+widget.winfo_width()
     	y1=y+widget.winfo_height()
-    	ImageGrab.grab(bbox=(x,y,x1,y1)).save(p1)
-		
+    	im=ImageGrab.grab(bbox=(x,y,x1,y1),childprocess=None, backend=None) 
+	im.save(p1)
+	self.create_xml()
+	#sys.exit()
+
     #save image and exit program
     def save_exit(self):
 	#call save
@@ -403,14 +483,23 @@ class Gui():
 	opts = {}
         opts['filetypes'] = [('Supported types',('.txt'))]
         
-        self.pathText = tkFileDialog.askopenfilename(title='Enter File with labels for Image',**opts)
-        if self.pathText == '': return
+	if self.Out==0:
+        	self.pathText = tkFileDialog.askopenfilename(title='Enter File with labels for Image',**opts)
+        	if self.pathText == '': return
         
+		#create a list qith all images names on the directory the file is selected 
+		dirpath=os.path.dirname(self.path)
+   		listin=os.listdir(dirpath)
+		for file in listin:
+			#enter the name of the file into a list
+			#the next element of the list will be loaded when Next button is clicked  
+			self.ImageList.append(file)  
+		self.Out=1 
+		
 	#Fill Console History with labels for Image
 	fin = open(self.pathText, 'r')
 	ftemp=open(os.path.dirname(self.pathText)+'temp.txt' ,'w')
 
-	
 	markerStart=-1
 	for line in fin:
 		if markerStart==0:
@@ -457,16 +546,16 @@ class Gui():
     
    		
     def help(self):
-	tkMessageBox.showinfo("Information","How to use:\n write instructions here whenever you have time\n add link to a webpae with nice instructions")
-    
+	tkMessageBox.showinfo("Help","For Instructions of how to use CITT:\nhttps://github.com/mpantoja314/Image")
     def about(self):
-	tkMessageBox.showinfo("Information","V.E.R. version 1.0. \n Created by Maria Pantoja & Anahid \n Department Of computer science and software engineering \n CalPoly San Luis Obispo.")
-
-
+	tkMessageBox.showinfo("Information","C.I.T.T Civil Infrastructure Tagging Tool: \nVersion 1.0. \nUpdated  October 2017. \nDeveloped by:\nMaria Pantoja and Anahid Behrouzi \nCalPoly SLO")
+ 
 #MAIN LOOP
 if __name__== '__main__':
     root=tk.Tk()
     gui=Gui(root)
-    root.title("V.E.R. Virtual Earthquake Rec.")
+    root.title("C.I.T.T. Civil Infrastructure Tagging Tool")
+    root.configure(background='blue')
+    
     #root.geometry("1000x1500+0+0")
     root.mainloop()
